@@ -20,13 +20,22 @@ proxy.on('proxyReq', function(proxyReq, req, res) {
 proxy.on('proxyRes', function (proxyRes, req, res) {
     const contentType = proxyRes.headers['content-type'] || '';
     const encoding = proxyRes.headers['content-encoding'];
+    
+    // ADD THIS LINE: It removes the "Integrity" check that blocks modified scripts
+    delete proxyRes.headers['x-webkit-csp'];
+    delete proxyRes.headers['content-security-policy'];
+    
+    // Some games use "Link" headers to pre-load scripts; we need to clear those too
+    delete proxyRes.headers['link'];
 
     // Strip security headers that block embedding
     delete proxyRes.headers['content-security-policy'];
     delete proxyRes.headers['x-frame-options'];
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    if (contentType.includes('text/html') || contentType.includes('application/javascript')) {
+    // Replace your current if (contentType.includes(...)) with this:
+    if (contentType.includes('text/html')) {
+        // ONLY rewrite HTML. Do not touch JS or CSS for now to avoid corruption.
         let body = [];
         proxyRes.on('data', chunk => body.push(chunk));
         proxyRes.on('end', () => {
@@ -35,25 +44,26 @@ proxy.on('proxyRes', function (proxyRes, req, res) {
                 if (encoding === 'gzip') buffer = zlib.gunzipSync(buffer);
                 else if (encoding === 'deflate') buffer = zlib.inflateSync(buffer);
                 else if (encoding === 'br') buffer = zlib.brotliDecompressSync(buffer);
-            } catch (e) {}
-
+            } catch (e) {
+                return res.end(buffer); // If decompression fails, send raw
+            }
+    
             let content = buffer.toString('utf8');
             const host = req.headers.host;
             
-            // Critical: Replace the "anti-frame" scripts in the game code
+            // Anti-Detection bypass
             content = content.replace(/window\.top !== window\.self/g, 'false');
-            content = content.replace(/window\.location\.hostname !== "arras\.io"/g, 'false');
             content = content.replace(/arras\.io/g, host);
-
-            delete proxyRes.headers['content-encoding'];
-            delete proxyRes.headers['content-length'];
-            Object.keys(proxyRes.headers).forEach(key => res.setHeader(key, proxyRes.headers[key]));
+    
+            res.setHeader('Content-Type', 'text/html');
             res.end(content);
         });
     } else {
+        // For ALL other files (JS, CSS, Images), pipe them exactly as they are
         Object.keys(proxyRes.headers).forEach(key => res.setHeader(key, proxyRes.headers[key]));
         proxyRes.pipe(res);
     }
+
 });
 
 const server = http.createServer((req, res) => proxy.web(req, res));
