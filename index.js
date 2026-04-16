@@ -3,7 +3,7 @@ const httpProxy = require('http-proxy');
 const zlib = require('zlib');
 
 const proxy = httpProxy.createProxyServer({
-  target: 'https://openfront.io',
+  target: 'https://www.crazygames.com',
   changeOrigin: true,
   followRedirects: true,
   selfHandleResponse: true,
@@ -12,9 +12,9 @@ const proxy = httpProxy.createProxyServer({
 
 // 1. SPOOF THE IDENTITY (Fixes "Embedded Site" error)
 proxy.on('proxyReq', function(proxyReq, req, res) {
-  proxyReq.setHeader('Referer', 'https://openfront.io');
-  proxyReq.setHeader('Origin', 'https://openfront.io');
-  proxyReq.setHeader('Host', 'openfront.io');
+  proxyReq.setHeader('Referer', 'https://www.crazygames.com');
+  proxyReq.setHeader('Origin', 'https://www.crazygames.com');
+  proxyReq.setHeader('Host', 'crazygames.com');
 });
 
 proxy.on('proxyRes', function (proxyRes, req, res) {
@@ -50,10 +50,6 @@ proxy.on('proxyRes', function (proxyRes, req, res) {
     
             let content = buffer.toString('utf8');
             const host = req.headers.host;
-            
-            // Anti-Detection bypass
-            content = content.replace(/window\.top !== window\.self/g, 'false');
-            content = content.replace(/arras\.io/g, host);
     
             res.setHeader('Content-Type', 'text/html');
             res.end(content);
