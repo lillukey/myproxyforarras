@@ -3,7 +3,7 @@ const httpProxy = require('http-proxy');
 const zlib = require('zlib');
 
 const proxy = httpProxy.createProxyServer({
-  target: 'https://arras.io',
+  target: 'https://openfront.io',
   changeOrigin: true,
   followRedirects: true,
   selfHandleResponse: true,
@@ -12,9 +12,9 @@ const proxy = httpProxy.createProxyServer({
 
 // 1. SPOOF THE IDENTITY (Fixes "Embedded Site" error)
 proxy.on('proxyReq', function(proxyReq, req, res) {
-  proxyReq.setHeader('Referer', 'https://arras.io');
-  proxyReq.setHeader('Origin', 'https://arras.io');
-  proxyReq.setHeader('Host', 'arras.io');
+  proxyReq.setHeader('Referer', 'https://openfront.io');
+  proxyReq.setHeader('Origin', 'https://openfront.io');
+  proxyReq.setHeader('Host', 'openfront.io');
 });
 
 proxy.on('proxyRes', function (proxyRes, req, res) {
